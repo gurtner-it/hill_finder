@@ -1,10 +1,20 @@
-# assign directory
-directory = '/Users/beatgurtner/Downloads/rides/'
+import haversine as hs
+import numpy as np
 
-gpx_filename = '4x12_irgendwas_'
-gpx_filename = 'Velofahren_hett_au_scho_meh_Spass_gmacht'
-gpx_filename = 'Evening_Ride'
-gpx_filename = 'Gurnigu_cold_quite_sunny'
+# assign directory
+gpx_dir = '/Users/beatgurtner/Downloads/rides/'
+#gpx_dir = '/Applications/MAMP/htdocs/hill_finder/gpx_source/'
+csv_dir = '/Applications/MAMP/htdocs/hill_finder/csv_export/'
+plot_export_dir = '/Applications/MAMP/htdocs/hill_finder/plot_export/'
+
 
 show_plot = False
 save_plot = True
+
+def haversine_distance(lat1, lon1, lat2, lon2) -> float:
+    distance = hs.haversine(
+        point1=(lat1, lon1),
+        point2=(lat2, lon2),
+        unit=hs.Unit.METERS
+    )
+    return np.round(distance, 2)

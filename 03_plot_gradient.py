@@ -1,75 +1,66 @@
 # https://betterdatascience.com/data-science-for-cycling-calculate-route-gradients-from-strava-gpx
 
+# import required module
+import os
 import config
 import gpxpy
 import gpxpy.gpx
-
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.pyplot as plt
-import haversine as hs
-
-import plotly.graph_objects as go
-import plotly.offline as pyo
 
 plt.rcParams['axes.spines.top'] = False
 plt.rcParams['axes.spines.right'] = False
-
-
 plt.rcParams['figure.figsize'] = (16, 6)
-plt.rcParams['axes.spines.top'] = False
-plt.rcParams['axes.spines.right'] = False
+
+# delete old plots
+for filename in os.listdir(config.plot_export_dir+'03_gradient'):
+    file_path = os.path.join(config.plot_export_dir+'03_gradient', filename)
+    try:
+        if os.path.isfile(file_path) or os.path.islink(file_path):
+            os.unlink(file_path)
+        elif os.path.isdir(file_path):
+            shutil.rmtree(file_path)
+    except Exception as e:
+        print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
 
-route_df = pd.read_csv('csv_export/'+config.gpx_filename+'.csv')
-route_df.head()
 
-#print(route_df)
+# iterate over files in
+for filename in os.listdir(config.csv_dir):
+    file = os.path.join(config.csv_dir, filename)
+    # checking if it is a file
+    if os.path.isfile(file) and filename != '.DS_Store':
+        #print(filename)
 
-gradients = [np.nan]
+        filename_no_ext = os.path.splitext(filename)[0]
 
-for ind, row in route_df.iterrows(): 
-    if ind == 0:
-        continue
-        
-    grade = (row['elevation_diff'] / row['distance']) * 100
-    
-    if grade > 30:
-        gradients.append(np.nan)
-    else:
-        gradients.append(np.round(grade, 1))
+        gpx_open_path = file
+        csv_export_path = 'csv_export/'+filename_no_ext+'.csv'
+        plot_export_path = 'plot_export/track/'+filename_no_ext+'.png'
 
+        try:
 
+            route_df = pd.read_csv(file)
+            route_df.head()
 
-route_df['gradient'] = gradients
-route_df['gradient'] = route_df['gradient'].interpolate().fillna(0)
-
-# round
-route_df = route_df.round({'gradient': 3})
-
-# exclude outliers
-lower = route_df.gradient.quantile(.05)
-upper = route_df.gradient.quantile(.95)
-route_df = route_df.clip(lower=lower, upper=upper)
-
-#smoothing gradient
-route_df['gradient'] = route_df['gradient'].rolling(100, min_periods=1).mean()
+            # plot
+            plt.title('Terrain gradient on the route', size=20)
+            plt.xlabel('Data point', size=14)
+            plt.ylabel('Gradient (%)', size=14)
+            plt.plot(np.arange(len(route_df)), route_df['gradient'], lw=1, color='#101010');
 
 
-# plot
-plt.title('Terrain gradient on the route', size=20)
-plt.xlabel('Data point', size=14)
-plt.ylabel('Gradient (%)', size=14)
-plt.plot(np.arange(len(route_df)), route_df['gradient'], lw=1, color='#101010');
+            if config.save_plot:
+                plt.savefig('plot_export/03_gradient/'+filename_no_ext+'__gradient.png')
 
+            if config.show_plot:
+                plt.show()
 
-if config.save_plot:
-    plt.savefig('plot_export/'+config.gpx_filename+'__gradient.png')
+            plt.close()
 
-if config.show_plot:
-    plt.show()
-
-route_df.to_csv('csv_export/'+config.gpx_filename+'.csv', index=False)
-
-
+        except:
+            print("An exception occurred:"+filename)
+            traceback.print_exc()
